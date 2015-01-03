@@ -36,10 +36,10 @@ Adafruit_TrellisSet trellis = Adafruit_TrellisSet(
  
 #define numKeys (NUMTRELLIS * 16)
 
-#define ROT_RIGHT_UNIT 0.333;
-#define ROT_LEFT_UNIT 0.5;
+#define ROT_RIGHT_UNIT 0.40;
+#define ROT_LEFT_UNIT 0.51;
 
-const unsigned long OPE_TIME = 1000L;
+const unsigned long OPE_TIME = 1500L;
 
 char rot_state_1; // 状態 0~3
 char rot_state_2; // 状態 0~3
@@ -55,6 +55,11 @@ float rot_value_1 = 0;
 float rot_value_2 = 0;
 float rot_value_3 = 0;
 float rot_value_4 = 0;
+
+float rot_tmp_1 = 0;
+float rot_tmp_2 = 0;
+float rot_tmp_3 = 0;
+float rot_tmp_4 = 0;
 
 int frameMode = 0;
 int nextFrame[numKeys];
@@ -124,6 +129,8 @@ void setup() {
   
   MsTimer2::set(2, rotary);     // 500ms毎にflash( )割込み関数を呼び出す様に設定
   MsTimer2::start();             // タイマー割り込み開始
+
+  Keyboard.begin(); // キーボード制御スタート  
 }
  
 void loop() {
@@ -213,6 +220,7 @@ void loop() {
   unsigned long current_time = millis();
   if ((current_time - last_ope_time) >= OPE_TIME) {
     frameMode = 0;
+    Keyboard.releaseAll(); // キーボード全開放
   }
   
   if(frameMode == 1) {
@@ -306,20 +314,39 @@ void rotary() {
       // 変化なし
       break;
     case 1:
-      rot_value_1 += ROT_RIGHT_UNIT;
-      if(rot_value_1 > 64) {
-        rot_value_1 = 64;
+      rot_tmp_1 += ROT_RIGHT_UNIT;
+      
+      if(rot_tmp_1 > 1) {
+        rot_value_1 += 1;
+        rot_tmp_1 = 0;
+        if(rot_value_1 > 64) {
+          rot_value_1 = 64;
+        }
+        frameMode = 1;
+        last_ope_time = millis();
+        Keyboard.press( KEY_LEFT_GUI );
+        Keyboard.press( KEY_TAB );
+        Keyboard.release( KEY_TAB );
       }
-      frameMode = 1;
-      last_ope_time = millis();
+      
       break;
     case 2:
-      rot_value_1 -= ROT_LEFT_UNIT;
-      if(rot_value_1 < 0) {
-        rot_value_1 = 0;
+      rot_tmp_1 -= ROT_LEFT_UNIT;
+
+      if(rot_tmp_1 < -1) {
+        rot_value_1 -= 1;
+        rot_tmp_1 = 0;
+        if(rot_value_1 < 0) {
+          rot_value_1 = 0;
+        }
+        frameMode = 1;
+        last_ope_time = millis();
+        Keyboard.press( KEY_LEFT_GUI );
+        Keyboard.press( KEY_LEFT_SHIFT );
+        Keyboard.press( KEY_TAB );
+        Keyboard.release( KEY_TAB );
+        Keyboard.release( KEY_LEFT_SHIFT );
       }
-      frameMode = 1;
-      last_ope_time = millis();
       break;
   }
 
